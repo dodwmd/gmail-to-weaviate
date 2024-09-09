@@ -12,13 +12,16 @@ from gmail_to_weaviate import (
     get_date
 )
 
+
 @pytest.fixture(scope="module")
 def weaviate_client():
     return weaviate.Client("http://localhost:8080")
 
+
 @pytest.fixture
 def mock_gmail_service():
     return Mock()
+
 
 def test_get_gmail_service():
     with patch('gmail_to_weaviate.Credentials') as mock_credentials, \
@@ -32,13 +35,14 @@ def test_get_gmail_service():
         mock_credentials.from_authorized_user_file.assert_called_once()
         mock_build.assert_called_once_with('gmail', 'v1', credentials=mock_credentials.from_authorized_user_file.return_value)
 
-def test_create_weaviate_schema(mock_weaviate_client):
-    with patch('gmail_to_weaviate.client', mock_weaviate_client):
-        create_weaviate_schema()
 
-        mock_weaviate_client.schema.create.assert_called_once()
+def test_create_weaviate_schema(weaviate_client):
+    create_weaviate_schema()
+    schema = weaviate_client.schema.get()
+    assert any(class_obj['class'] == 'Email' for class_obj in schema['classes'])
 
-def test_fetch_emails(mock_gmail_service):
+
+def test_fetch_emails(mock_gmail_service, weaviate_client):
     mock_gmail_service.users().messages().list().execute.return_value = {
         'messages': [{'id': '123'}, {'id': '456'}]
     }
@@ -54,12 +58,14 @@ def test_fetch_emails(mock_gmail_service):
         }
     }
 
-    with patch('gmail_to_weaviate.add_to_weaviate') as mock_add_to_weaviate:
-        fetch_emails(mock_gmail_service, max_results=2)
+    fetch_emails(mock_gmail_service, max_results=2)
 
-        assert mock_add_to_weaviate.call_count == 2
+    # Check if emails were added to Weaviate
+    results = weaviate_client.query.get('Email', ['subject', 'sender']).do()
+    assert len(results['data']['Get']['Email']) == 2
 
-def test_add_to_weaviate(mock_weaviate_client):
+
+def test_add_to_weaviate(weaviate_client):
     email = {
         'id': '123',
         'payload': {
@@ -72,10 +78,17 @@ def test_add_to_weaviate(mock_weaviate_client):
         }
     }
 
-    with patch('gmail_to_weaviate.client', mock_weaviate_client):
-        add_to_weaviate(email)
+    add_to_weaviate(email)
 
-        mock_weaviate_client.data_object.create.assert_called_once()
+    results = weaviate_client.query.get('Email', ['subject', 'sender']).with_where({
+        'path': ['gmail_id'],
+        'operator': 'Equal',
+        'valueString': '123'
+    }).do()
+    assert len(results['data']['Get']['Email']) == 1
+    assert results['data']['Get']['Email'][0]['subject'] == 'Test Subject'
+    assert results['data']['Get']['Email'][0]['sender'] == 'sender@example.com'
+
 
 def test_get_subject():
     email = {
@@ -87,6 +100,7 @@ def test_get_subject():
     }
     assert get_subject(email) == 'Test Subject'
 
+
 def test_get_body():
     email = {
         'payload': {
@@ -94,6 +108,7 @@ def test_get_body():
         }
     }
     assert get_body(email) == 'Test Body'
+
 
 def test_get_sender():
     email = {
@@ -104,6 +119,7 @@ def test_get_sender():
         }
     }
     assert get_sender(email) == 'sender@example.com'
+
 
 def test_get_date():
     email = {

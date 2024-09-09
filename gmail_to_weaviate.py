@@ -23,6 +23,11 @@ logger = logging.getLogger(__name__)
 # Gmail API setup
 SCOPES = ['https://www.googleapis.com/auth/gmail.readonly']
 
+# Weaviate setup
+weaviate_url = os.getenv('WEAVIATE_URL', 'http://localhost:8080')
+client = weaviate.Client(weaviate_url)
+
+
 def get_gmail_service():
     creds = None
     if os.path.exists('token.json'):
@@ -42,9 +47,6 @@ def get_gmail_service():
             token.write(creds.to_json())
     return build('gmail', 'v1', credentials=creds)
 
-# Weaviate setup
-weaviate_url = os.getenv('WEAVIATE_URL', 'http://localhost:8080')
-client = weaviate.Client(weaviate_url)
 
 def create_weaviate_schema():
     schema = {
@@ -62,6 +64,7 @@ def create_weaviate_schema():
     }
     client.schema.create(schema)
 
+
 @retry(stop=stop_after_attempt(3), wait=wait_exponential(multiplier=1, min=4, max=10))
 def fetch_emails(service, max_results=100, page_token=None):
     try:
@@ -73,12 +76,13 @@ def fetch_emails(service, max_results=100, page_token=None):
                 add_to_weaviate(msg)
             except HttpError as e:
                 logger.error(f"Error fetching message {message['id']}: {str(e)}")
-        
+
         next_page_token = results.get('nextPageToken')
         return next_page_token
     except HttpError as e:
         logger.error(f"Error fetching emails: {str(e)}")
         raise
+
 
 def add_to_weaviate(email):
     try:
@@ -94,7 +98,7 @@ def add_to_weaviate(email):
             })
             .do()
         )
-        
+
         if result['data']['Get']['Email']:
             logger.info(f"Email with ID {gmail_id} already exists in Weaviate. Skipping.")
             return
@@ -113,9 +117,11 @@ def add_to_weaviate(email):
     except Exception as e:
         logger.error(f"Error adding email to Weaviate: {str(e)}")
 
+
 def get_subject(email):
     headers = email['payload']['headers']
     return next((header['value'] for header in headers if header['name'].lower() == 'subject'), '')
+
 
 def get_body(email):
     try:
@@ -129,11 +135,13 @@ def get_body(email):
         logger.error(f"Error decoding email body: {str(e)}")
         return ""
 
+
 def get_sender(email):
     headers = email['payload']['headers']
     from_header = next((header['value'] for header in headers if header['name'].lower() == 'from'), '')
     _, sender_email = parseaddr(from_header)
     return sender_email
+
 
 def get_date(email):
     headers = email['payload']['headers']
@@ -143,6 +151,7 @@ def get_date(email):
     except Exception as e:
         logger.error(f"Error parsing date: {str(e)}")
         return ""
+
 
 def main(args):
     try:
@@ -162,6 +171,7 @@ def main(args):
         time.sleep(1)  # Avoid hitting rate limits
 
     logger.info(f"Processed {total_processed} emails")
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Fetch emails from Gmail and store in Weaviate')
