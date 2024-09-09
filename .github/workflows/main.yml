@@ -27,7 +27,7 @@ jobs:
     
     - name: Start Weaviate
       run: |
-        docker-compose up -d weaviate
+        docker compose up -d weaviate
         # Wait for Weaviate to be ready
         timeout 300 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080/v1/.well-known/ready)" != "200" ]]; do sleep 5; done' || false
     
