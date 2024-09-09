@@ -19,8 +19,16 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
+    - name: Start Weaviate
+      run: |
+        docker-compose up -d weaviate
+        # Wait for Weaviate to be ready
+        timeout 300 bash -c 'while [[ "$(curl -s -o /dev/null -w ''%{http_code}'' localhost:8080/v1/.well-known/ready)" != "200" ]]; do sleep 5; done' || false
     - name: Run tests
-      run: python -m pytest tests/
+      run: |
+        pytest tests/
+    - name: Stop Weaviate
+      run: docker-compose down
     - name: Lint
       run: flake8 .
 

@@ -1,4 +1,5 @@
 import pytest
+import weaviate
 from unittest.mock import Mock, patch
 from gmail_to_weaviate import (
     get_gmail_service,
@@ -11,12 +12,12 @@ from gmail_to_weaviate import (
     get_date
 )
 
-@pytest.fixture
-def mock_gmail_service():
-    return Mock()
+@pytest.fixture(scope="module")
+def weaviate_client():
+    return weaviate.Client("http://localhost:8080")
 
 @pytest.fixture
-def mock_weaviate_client():
+def mock_gmail_service():
     return Mock()
 
 def test_get_gmail_service():

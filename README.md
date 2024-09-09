@@ -60,11 +60,22 @@ tilt up
 
 ## Testing
 
-Run tests with:
+To run tests locally:
 
-```
-make test
-```
+1. Start Weaviate using docker-compose:
+   ```
+   docker-compose up -d weaviate
+   ```
+
+2. Run the tests:
+   ```
+   pytest tests/
+   ```
+
+3. Stop Weaviate:
+   ```
+   docker-compose down
+   ```
 
 ## Linting
 
