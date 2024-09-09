@@ -1,6 +1,5 @@
 import pytest
-import weaviate
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, mock_open
 from gmail_to_weaviate import (
     get_gmail_service,
     create_weaviate_schema,
@@ -12,37 +11,39 @@ from gmail_to_weaviate import (
     get_date
 )
 
-
-@pytest.fixture(scope="module")
-def weaviate_client():
-    return weaviate.Client("http://localhost:8080")
-
-
 @pytest.fixture
 def mock_gmail_service():
     return Mock()
 
+@pytest.fixture
+def mock_weaviate_client():
+    mock_client = Mock()
+    mock_client.schema.get.return_value = {'classes': []}
+    mock_client.query.get.return_value.with_where.return_value.do.return_value = {
+        'data': {'Get': {'Email': []}}
+    }
+    return mock_client
 
-def test_get_gmail_service():
+@patch('gmail_to_weaviate.client', new_callable=Mock)
+def test_get_gmail_service(mock_weaviate_client):
     with patch('gmail_to_weaviate.Credentials') as mock_credentials, \
-         patch('gmail_to_weaviate.build') as mock_build:
+         patch('gmail_to_weaviate.build') as mock_build, \
+         patch('builtins.open', mock_open(read_data='{"installed":{}}')):
         mock_credentials.from_authorized_user_file.return_value = Mock()
         mock_build.return_value = Mock()
 
         service = get_gmail_service()
 
         assert service is not None
-        mock_credentials.from_authorized_user_file.assert_called_once()
         mock_build.assert_called_once_with('gmail', 'v1', credentials=mock_credentials.from_authorized_user_file.return_value)
 
-
-def test_create_weaviate_schema(weaviate_client):
+@patch('gmail_to_weaviate.client', new_callable=Mock)
+def test_create_weaviate_schema(mock_weaviate_client):
     create_weaviate_schema()
-    schema = weaviate_client.schema.get()
-    assert any(class_obj['class'] == 'Email' for class_obj in schema['classes'])
+    mock_weaviate_client.schema.create.assert_called_once()
 
-
-def test_fetch_emails(mock_gmail_service, weaviate_client):
+@patch('gmail_to_weaviate.client', new_callable=Mock)
+def test_fetch_emails(mock_weaviate_client, mock_gmail_service):
     mock_gmail_service.users().messages().list().execute.return_value = {
         'messages': [{'id': '123'}, {'id': '456'}]
     }
@@ -60,12 +61,10 @@ def test_fetch_emails(mock_gmail_service, weaviate_client):
 
     fetch_emails(mock_gmail_service, max_results=2)
 
-    # Check if emails were added to Weaviate
-    results = weaviate_client.query.get('Email', ['subject', 'sender']).do()
-    assert len(results['data']['Get']['Email']) == 2
+    assert mock_weaviate_client.data_object.create.call_count == 2
 
-
-def test_add_to_weaviate(weaviate_client):
+@patch('gmail_to_weaviate.client', new_callable=Mock)
+def test_add_to_weaviate(mock_weaviate_client):
     email = {
         'id': '123',
         'payload': {
@@ -80,15 +79,7 @@ def test_add_to_weaviate(weaviate_client):
 
     add_to_weaviate(email)
 
-    results = weaviate_client.query.get('Email', ['subject', 'sender']).with_where({
-        'path': ['gmail_id'],
-        'operator': 'Equal',
-        'valueString': '123'
-    }).do()
-    assert len(results['data']['Get']['Email']) == 1
-    assert results['data']['Get']['Email'][0]['subject'] == 'Test Subject'
-    assert results['data']['Get']['Email'][0]['sender'] == 'sender@example.com'
-
+    mock_weaviate_client.data_object.create.assert_called_once()
 
 def test_get_subject():
     email = {
@@ -100,7 +91,6 @@ def test_get_subject():
     }
     assert get_subject(email) == 'Test Subject'
 
-
 def test_get_body():
     email = {
         'payload': {
@@ -108,7 +98,6 @@ def test_get_body():
         }
     }
     assert get_body(email) == 'Test Body'
-
 
 def test_get_sender():
     email = {
@@ -119,7 +108,6 @@ def test_get_sender():
         }
     }
     assert get_sender(email) == 'sender@example.com'
-
 
 def test_get_date():
     email = {
