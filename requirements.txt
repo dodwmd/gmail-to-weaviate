@@ -1,5 +1,5 @@
 google-auth-oauthlib==1.0.0
-google-auth-httplib2==0.1.0
+google-auth-httplib2==0.2.0
 google-api-python-client==2.144.0
 weaviate-client==3.18.0
 python-dotenv==1.0.1
