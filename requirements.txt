@@ -23,7 +23,7 @@ flake8==7.1.1
 Flask==2.0.1
 
 # Data visualization
-matplotlib==3.7.1
+matplotlib==3.9.2
 wordcloud==1.9.3
 
 # WSGI server
