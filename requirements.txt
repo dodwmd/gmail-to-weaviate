@@ -17,7 +17,7 @@ protobuf==5.28.0
 pytest==8.3.2
 
 # Linting
-flake8==6.0.0
+flake8==6.1.0
 
 # Web framework
 Flask==2.0.1
