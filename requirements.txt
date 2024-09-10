@@ -4,7 +4,7 @@ google-auth-httplib2==0.2.0
 google-api-python-client==2.144.0
 
 # Weaviate
-weaviate-client==3.18.0
+weaviate-client==4.7.1
 
 # Environment variables
 python-dotenv==1.0.1
