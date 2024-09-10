@@ -1,12 +1,13 @@
 # Gmail to Weaviate
 
-This project fetches emails from a Gmail account and stores them in a Weaviate instance for easy searching and analysis.
+This project fetches emails from a Gmail account, stores them in a Weaviate instance for easy searching and analysis, and provides a web interface for visualizing email insights.
 
 ## Prerequisites
 
 - Python 3.9+
 - Docker and Docker Compose
 - Gmail API credentials
+- Weaviate instance
 
 ## Setup
 
@@ -25,18 +26,19 @@ This project fetches emails from a Gmail account and stores them in a Weaviate i
 
 3. Create a `.env` file in the project root and add your Weaviate configuration:
    ```
-   WEAVIATE_URL=http://weaviate:8080
-   LOG_LEVEL=INFO
+   WEAVIATE_URL=http://localhost:8080
    ```
 
 4. Install dependencies:
    ```
-   make setup
+   pip install -r requirements.txt
    ```
 
 ## Usage
 
-To run the application:
+### Fetching Emails
+
+To fetch emails and store them in Weaviate:
 
 ```
 python gmail_to_weaviate.py
@@ -50,47 +52,54 @@ You can specify the maximum number of emails to process and the batch size:
 python gmail_to_weaviate.py --max_emails 5000 --batch_size 200
 ```
 
+### Web Interface
+
+To run the web interface for email insights:
+
+```
+python app.py
+```
+
+This will start a Flask development server. Open a web browser and navigate to `http://localhost:5000` to view the email insights.
+
+## Docker
+
+To build and run the application using Docker:
+
+1. Build the Docker image:
+   ```
+   docker build -t gmail-to-weaviate .
+   ```
+
+2. Run the Docker container:
+   ```
+   docker run -p 5000:5000 -e WEAVIATE_URL=http://host.docker.internal:8080 gmail-to-weaviate
+   ```
+
+   Note: Adjust the `WEAVIATE_URL` if your Weaviate instance is running elsewhere.
+
 ## Development
 
 To start the development environment with hot reloading:
 
 ```
-tilt up
+flask run --debug
 ```
 
 ## Testing
 
-To run tests locally:
+To run tests:
 
-1. Start Weaviate using docker-compose:
-   ```
-   docker-compose up -d weaviate
-   ```
-
-2. Run the tests:
-   ```
-   pytest tests/
-   ```
-
-3. Stop Weaviate:
-   ```
-   docker-compose down
-   ```
+```
+pytest tests/
+```
 
 ## Linting
 
 Lint the code with:
 
 ```
-make lint
-```
-
-## Building
-
-Build the Docker image with:
-
-```
-make build
+flake8 .
 ```
 
 ## Contributing

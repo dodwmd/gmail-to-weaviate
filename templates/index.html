@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-4">Email Insights</h1>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Email Statistics</h5>
+                <p class="card-text">Total Emails: {{ email_count }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Top Senders</h5>
+                <ul class="list-group">
+                    {% for sender, count in top_senders %}
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        {{ sender }}
+                        <span class="badge bg-primary rounded-pill">{{ count }}</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Email Volume Over Time</h5>
+                <canvas id="emailVolumeChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Common Topics</h5>
+                <img src="data:image/png;base64,{{ common_words }}" alt="Word Cloud" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Search Emails</h5>
+                <form action="{{ url_for('search') }}" method="get">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control" placeholder="Search emails..." name="query">
+                        <button class="btn btn-primary" type="submit">Search</button>
+                    </div>
+                </form>
+                {% if search_results %}
+                <ul class="list-group mt-3">
+                    {% for email in search_results %}
+                    <li class="list-group-item">
+                        <h6>{{ email.subject }}</h6>
+                        <p class="mb-1"><strong>From:</strong> {{ email.sender }}</p>
+                        <p class="mb-1"><strong>Date:</strong> {{ email.date }}</p>
+                        <p class="mb-0">{{ email.body[:200] }}...</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    var ctx = document.getElementById('emailVolumeChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ email_volume.labels | tojson }},
+            datasets: [{
+                label: 'Email Volume',
+                data: {{ email_volume.data | tojson }},
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,14 +1,19 @@
 services:
   gmail_to_weaviate:
     build: .
+    ports:
+      - "5000:5000"
     volumes:
       - .:/app
       - ./credentials.json:/app/credentials.json
       - ./token.json:/app/token.json
     environment:
       - WEAVIATE_URL=http://weaviate:8080
+      - FLASK_APP=app.py
+      - FLASK_RUN_HOST=0.0.0.0
     depends_on:
       - weaviate
+    command: gunicorn --bind 0.0.0.0:5000 --worker-class eventlet -w 1 app:app
 
   weaviate:
     image: semitechnologies/weaviate:1.18.3

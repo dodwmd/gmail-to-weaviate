@@ -1,9 +1,30 @@
+# Google API
 google-auth-oauthlib==1.0.0
 google-auth-httplib2==0.2.0
 google-api-python-client==2.144.0
+
+# Weaviate
 weaviate-client==3.18.0
+
+# Environment variables
 python-dotenv==1.0.1
+
+# Utilities
 tenacity==8.2.2
 protobuf==5.28.0
+
+# Testing
 pytest==8.3.2
+
+# Linting
 flake8==6.0.0
+
+# Web framework
+Flask==2.0.1
+
+# Data visualization
+matplotlib==3.7.1
+wordcloud==1.9.2
+
+# WSGI server
+gunicorn==23.0.0
