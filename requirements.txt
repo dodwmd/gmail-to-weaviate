@@ -10,7 +10,7 @@ weaviate-client==3.18.0
 python-dotenv==1.0.1
 
 # Utilities
-tenacity==8.2.2
+tenacity==9.0.0
 protobuf==5.28.0
 
 # Testing
