@@ -1,7 +1,7 @@
 # Google API
 google-auth-oauthlib==1.2.1
 google-auth-httplib2==0.2.0
-google-api-python-client==2.144.0
+google-api-python-client==2.149.0
 
 # Weaviate
 weaviate-client==4.7.1
